@@ -1,0 +1,137 @@
+//Данная программа делает смещение в тексте файла либо влево, либо вправо, в зависимости от условия задачи, добавляя или урезая память файла.
+//Создаётся ещё один файл, туда заносятся данные, дальше мы затираем все данные в исходном файле, и закидываем туда всё, 
+//что находится в новом файле, после этого новый файл удаляем, а первый изменяется как не бывало. 
+//Т.е. у нас теперь не идёт выделение памяти.
+
+#include "pch.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#define strdup _strdup
+
+void ctrlc(FILE *fd, FILE *fd21, int len) {
+	int ch;
+	size_t it = 0;
+	fseek(fd, 0, SEEK_END);
+	size_t stlen = ftell(fd);
+	rewind(fd);
+	while (it < stlen + len) {
+		ch = fgetc(fd);
+		if (ch == 13) { fputc('\n', fd21); it++; }
+		else {
+			fseek(fd21, it, SEEK_SET);
+			fputc(ch, fd21); it++;
+		}
+	}
+
+
+}
+
+void move_left(FILE *fd, int size, int pos) { // Смещение символов влево, с освобождением места в файле ( не оптимальный вариант)
+	long fd_size;
+	long ne_size;
+	long it;
+	long index;
+	int symbol;
+	fseek(fd, pos, SEEK_SET);
+	fd_size = ftell(fd);
+	fseek(fd, size, SEEK_END);
+	ne_size = ftell(fd);
+	for (it = fd_size, index = 1; it <= ne_size; ++it, ++index) {
+		fseek(fd, it, SEEK_SET);
+		symbol = fgetc(fd);
+		fseek(fd, it - 1, SEEK_SET);
+		fputc(symbol, fd);
+	}
+}
+
+void move_right(FILE *fd, int size, int pos) { // Сдвигает текст вправо, добавляя место в файле
+	long fd_size;
+	long ne_size;
+	long it;
+	long index;
+	int symbol;
+	fseek(fd, 0, SEEK_END);
+	fd_size = ftell(fd);
+	fseek(fd, size, SEEK_END);
+	ne_size = ftell(fd);
+	for (it = fd_size, index = 1; it > pos; --it, ++index) {
+		fseek(fd, it - 1, SEEK_SET);
+		symbol = fgetc(fd);
+		fseek(fd, ne_size - index, SEEK_SET);
+		fputc(symbol, fd);
+	}
+}
+
+void change_str(FILE *fd, int pos, char*argv) {
+	fseek(fd, pos, SEEK_SET);
+	fprintf(fd, (char*)argv);
+}
+
+void check(FILE *fd, char*argv, char*argvv) { // освновной алгоритм
+	int ch;
+	int d[1] = { 0 };
+	FILE *fd1;
+	size_t it = 0;
+	size_t pos = 0;
+	size_t len = strlen((char*)argv);
+	while ((ch = fgetc(fd)) != EOF) {
+
+		if (it == 0 && ch == argv[it]) {
+			pos = ftell(fd);
+			it++;
+		}
+		else if (ch == argv[it]) {
+			it++;
+		}
+		else {
+			it = 0;
+			pos++;
+			fseek(fd, pos - 1, SEEK_SET);
+		}
+		if (it == len) {
+			if (strlen((char*)argvv) > len) {
+				move_right(fd, strlen((char*)argvv) - len, pos + len - 1);
+			}
+			else if (strlen((char*)argvv) < len) {
+				move_left(fd, strlen((char*)argvv) - len, pos + strlen((char*)argvv) - 1);
+				d[0]++;
+			}
+			change_str(fd, pos - 1, argvv);
+
+			fseek(fd, pos + len - 1, SEEK_SET);
+			it = 0;
+		}
+	}
+	if (d[0]) {
+		rewind(fd);
+
+		fd1 = fopen("ddd.txt", "w"); // создание нового файла
+		ctrlc(fd, fd1, (strlen((char*)argvv) - len)*d[0]); // копирование изменённого файла в новый
+		fclose(fd);
+		fclose(fd1);
+		fd1 = fopen("ddd.txt", "r+b"); // чтение из нового файла
+		fd = fopen("rrr.txt", "w"); // перезапись в старый файл
+		ctrlc(fd1, fd, 0);
+		fclose(fd1);
+		remove("ddd.txt"); // удаление нового файла
+	}
+}
+
+int main(int argc, char**argv) {
+
+
+	FILE* fd = fopen("rrr.txt", "r+b"); // открытие стандартного файла
+	if (0 == fd) {
+		fprintf(stdout, "File can't be opened\n");
+		return EXIT_FAILURE;
+	}
+	if (argc != 3) { fprintf(stdout, "There are no arguments\n"); }
+	else
+
+		check(fd, (char*)argv[1], (char*)argv[2]);
+
+
+	fclose(fd);
+	return EXIT_SUCCESS;
+}

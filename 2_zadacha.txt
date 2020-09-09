@@ -1,0 +1,54 @@
+﻿// 2 задача.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
+//
+
+#include "pch.h"
+#include "stdio.h"
+#include "stdlib.h"
+#include "string.h"
+
+unsigned stroch(const char *arg)
+{
+	char *text = (char*)arg;
+	int len = strlen(arg);
+	unsigned counter1 = 0;
+	unsigned i;
+	text = (char*)calloc(1, sizeof(len));
+	for (i = 0; i < len; i++)
+	{
+		if (text[i] >= 'a'&&text[i] <= 'z')
+		{
+			counter1++;
+		}
+	}
+	free(text);
+	return counter1;
+}
+
+unsigned zaglav(const char *arg)
+{
+	char *text = (char*)arg;
+	int len = strlen(arg);
+	unsigned counter2 = 0;
+	unsigned i;
+	text = (char*)calloc(1, sizeof(len));
+	for (i = 0; i < len; i++)
+	{
+		if (text[i] >= 'A'&&text[i] <= 'Z')
+		{
+			counter2++;
+		}
+	}
+	free(text);
+	return counter2;
+}
+
+int main(int argc, char *argv[])
+{
+	for (int i = 1; i < argc; i++)
+	{
+		if (strlen(argv[i]) > 1)
+			printf("There is more than onw string, try again.");
+		else fprintf(stdout, "Stroch: %u \n Zaglav: %u \n", stroch(argv[i]), zaglav(argv[i]));
+	}
+	return EXIT_SUCCESS;
+}
